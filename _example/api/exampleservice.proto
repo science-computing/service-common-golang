@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package exampleapi;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+service ExampleService {
+    /* Prints something */
+    rpc Print(PrintInput) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            post: "/print";
+            body: "*"
+        };
+    };
+};
+
+message PrintInput {
+    string text = 1;
+}
