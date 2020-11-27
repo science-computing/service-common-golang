@@ -25,6 +25,11 @@ func init() {
 	pflag.StringVar(&explicitConfigFilename, "config", "", "the configfile to use")
 }
 
+// SetExplicitConfigFile overrides the heuristics to identify the config file
+func SetExplicitConfigFile(name string) {
+	explicitConfigFilename = name
+}
+
 // InitConfig inits Viper configuration, i.e. setting config search path to /etc/config/$SERVICE_NAME
 // requiredKeys are checked for presence to ensure default configuration values
 // if not found the service exits
