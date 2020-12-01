@@ -42,6 +42,7 @@ type Service struct {
 	RegisterClientFunc func(ctx context.Context, mux *runtime.ServeMux, client interface{}) error
 	Service            interface{}
 	ServeHTTP          bool // enables REST endpoints
+	SwaggerJsonPath    string
 }
 
 // Start runs service with GRPC and REST service endpoints.
@@ -116,11 +117,14 @@ func (service *Service) startREST() error {
 	mux := http.NewServeMux()
 	mux.Handle("/", rmux)
 
-	// TODO: swagger web files are not relative to serviceutil anymore and thus not found
-	// TODO: swagger files must be copied when building container
-	mux.HandleFunc("/swagger.json", func(writer http.ResponseWriter, request *http.Request) {
-		http.ServeFile(writer, request, "api/dataset.swagger.json")
-	})
+	if service.SwaggerJsonPath != "" {
+		log.Infof("Using %s as swagger.json", service.SwaggerJsonPath)
+		mux.HandleFunc("/swagger.json", func(writer http.ResponseWriter, request *http.Request) {
+			http.ServeFile(writer, request, service.SwaggerJsonPath)
+		})
+	} else {
+		log.Infof("No swagger.json specifed")
+	}
 
 	// serve swagger-ui
 	swaggerMux := http.NewServeMux()
