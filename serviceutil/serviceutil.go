@@ -16,10 +16,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
 
-const httpPublishPort string = "8080"
+const metricsPublishPort string = "8080"
+const restPublishPort string = "8081"
 const grpcPublishPort string = "8090"
 
 // ErrInvalidArgument indicates, that one or more provided arguments are invalid, e.g. required data is missing
@@ -31,7 +33,8 @@ var logger *log.Entry
 type Service struct {
 	Name               string
 	GrpcPublishPort    string
-	httpPort           string
+	RestPort           string
+	MetricsPort        string
 	WaitGroup          sync.WaitGroup
 	Client             interface{}
 	NewClientFunc      func(*grpc.ClientConn) interface{}
@@ -44,7 +47,15 @@ type Service struct {
 // Start runs service with GRPC and REST service endpoints.
 // REST is served if Service.ServeHttp is true (currently fixed on port 8080)
 func (service *Service) Start() {
-	service.httpPort = httpPublishPort
+	if service.MetricsPort == "" {
+		service.MetricsPort = metricsPublishPort
+	}
+	if service.RestPort == "" {
+		service.RestPort = restPublishPort
+	}
+	if service.GrpcPublishPort == "" {
+		service.GrpcPublishPort = grpcPublishPort
+	}
 
 	//TODO check service config
 
@@ -53,7 +64,7 @@ func (service *Service) Start() {
 			prometheus.DefaultGatherer,
 			promhttp.HandlerOpts{},
 		))
-		http.ListenAndServe(":8080", nil)
+		http.ListenAndServe(":"+service.MetricsPort, nil)
 	}()
 
 	// start grpc
@@ -117,8 +128,8 @@ func (service *Service) startREST() error {
 	fs := http.FileServer(http.Dir("web"))
 	mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui", fs))
 
-	log.Infof("HTTP server start listening on port %v", service.httpPort)
-	return http.ListenAndServe("localhost:"+service.httpPort, mux)
+	log.Infof("HTTP server start listening on port %v", service.RestPort)
+	return http.ListenAndServe("localhost:"+service.RestPort, mux)
 }
 
 func (service *Service) startGRPC() error {
@@ -131,6 +142,8 @@ func (service *Service) startGRPC() error {
 
 	// create new grpc server
 	server := grpc.NewServer()
+
+	reflection.Register(server)
 	grpc.EnableTracing = true
 
 	// register service
