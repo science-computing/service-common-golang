@@ -9,7 +9,7 @@ import (
 	"github.com/science-computing/service-common-golang/apputil"
 	"github.com/science-computing/service-common-golang/serviceutil"
 
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
