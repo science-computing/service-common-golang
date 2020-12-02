@@ -15,7 +15,9 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/streadway/amqp v1.0.0 // indirect
-	google.golang.org/genproto v0.0.0-20201117123952-62d171c70ae1
+	google.golang.org/genproto v0.0.0-20201202151023-55d61f90c1ce
 	google.golang.org/grpc v1.33.2
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.0.1 // indirect
 	google.golang.org/protobuf v1.25.0
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

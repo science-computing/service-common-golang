@@ -16,6 +16,7 @@ var log = apputil.InitLogging()
 
 // ExampleService just contains a field for demonstation purposes
 type ExampleService struct {
+	exampleapi.UnimplementedExampleServiceServer
 	ExampleField string
 }
 
