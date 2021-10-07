@@ -16,7 +16,7 @@ bin: proto
 proto:
 	protoc \
 	--proto_path=./api \
-	-I$(GOPATH)/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+	-I$(GOPATH)/src/github.com/google/googleapis \
 	--go_out=gen/api \
     --go-grpc_out=gen/api \
     --grpc-gateway_out=logtostderr=true:gen/api \
