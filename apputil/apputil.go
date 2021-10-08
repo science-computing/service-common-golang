@@ -6,8 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/science-computing/service-common-golang/apputil/verbosetextlog"
+
 	"github.com/apex/log"
-	"github.com/apex/log/handlers/text"
 	"github.com/google/uuid"
 	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/pflag"
@@ -98,7 +99,7 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 func InitLoggingWithLevel(level log.Level) *log.Entry {
 	if logger == nil {
 		// init logging
-		log.SetHandler(text.New(os.Stdout))
+		log.SetHandler(verbosetextlog.New(os.Stdout))
 		logger = log.WithFields(log.Fields{})
 
 		// set default log level to INFO

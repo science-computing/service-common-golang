@@ -1,5 +1,8 @@
 module example
 
+//uncomment this to use the locally checked out library
+//replace github.com/science-computing/service-common-golang => ../
+
 go 1.14
 
 require (
@@ -10,7 +13,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.1
 	github.com/jackc/pgx/v4 v4.9.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/science-computing/service-common-golang v0.0.2
+	github.com/science-computing/service-common-golang v0.0.3
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
