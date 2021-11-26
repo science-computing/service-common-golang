@@ -95,7 +95,7 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 	}
 }
 
-//InitLogging inits apex/log as log
+//InitLoggingWithLevel inits apex/log as log
 func InitLoggingWithLevel(level log.Level) *log.Entry {
 	if logger == nil {
 		// init logging
