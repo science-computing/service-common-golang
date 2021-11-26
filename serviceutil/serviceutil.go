@@ -27,8 +27,6 @@ const grpcPublishPort string = "8090"
 // ErrInvalidArgument indicates, that one or more provided arguments are invalid, e.g. required data is missing
 var ErrInvalidArgument = errors.New("One ore more request arguments are invalid")
 
-var logger *log.Entry
-
 // Service defines values to start a GRPC (and a REST) service
 type Service struct {
 	Name               string
@@ -60,6 +58,7 @@ func (service *Service) Start() {
 
 	//TODO check service config
 
+	// start http metrics server
 	go func() {
 		http.Handle("/metrics", promhttp.HandlerFor(
 			prometheus.DefaultGatherer,
@@ -68,7 +67,7 @@ func (service *Service) Start() {
 		http.ListenAndServe(":"+service.MetricsPort, nil)
 	}()
 
-	// start grpc
+	// start grpc server
 	service.WaitGroup.Add(1)
 	go func() {
 		if err := service.startGRPC(); err != nil {
@@ -77,7 +76,7 @@ func (service *Service) Start() {
 		service.WaitGroup.Done()
 	}()
 
-	// start rest
+	// start http server with grpc <-> rest gateway
 	if service.ServeHTTP {
 		service.WaitGroup.Add(1)
 		go func() {
@@ -101,7 +100,7 @@ func (service *Service) startREST() error {
 	// connect to GRPC server
 	conn, err := grpc.Dial("localhost:"+service.GrpcPublishPort, grpc.WithInsecure())
 	if err != nil {
-		return fmt.Errorf("Failed to dial GRPC service [%w]", err)
+		return fmt.Errorf("failed to dial GRPC service [%w]", err)
 	}
 	defer conn.Close()
 
@@ -110,7 +109,7 @@ func (service *Service) startREST() error {
 	client := service.NewClientFunc(conn)
 	err = service.RegisterClientFunc(ctx, rmux, client)
 	if err != nil {
-		return fmt.Errorf("Failed to start HTTP service [%w]", err)
+		return fmt.Errorf("failed to start HTTP service [%w]", err)
 	}
 
 	// serve swagger file
@@ -139,9 +138,8 @@ func (service *Service) startREST() error {
 func (service *Service) startGRPC() error {
 	// start listening for grpc
 	listen, err := net.Listen("tcp", ":"+service.GrpcPublishPort)
-
 	if err != nil {
-		return fmt.Errorf("Failed to create Listen for GRPC service [%w]", err)
+		return fmt.Errorf("failed to create Listen for GRPC service [%w]", err)
 	}
 
 	// create new grpc server
@@ -160,13 +158,19 @@ func (service *Service) startGRPC() error {
 // GetServiceConnection establishes connection to GRPC service at given URL.
 // We are not waiting, til the service is up (no grpc.WithBlock())
 func GetServiceConnection(serviceAddress string) (service *grpc.ClientConn, err error) {
-	service, err = grpc.Dial(serviceAddress, grpc.WithInsecure())
+	return GetServiceConnectionWithDialOptions(serviceAddress, grpc.WithInsecure())
+}
+
+// GetServiceConnectionWithDialOptions establishes connection to GRPC service at given URL with given dial options.
+func GetServiceConnectionWithDialOptions(serviceAddress string, dialOptions ...grpc.DialOption) (service *grpc.ClientConn, err error) {
+	service, err = grpc.Dial(serviceAddress, dialOptions...)
 	if err != nil {
-		log.Fatalf("Failed to connect to [%v]", err)
+		log.Errorf("Failed to connect to '%s'. %s", serviceAddress, err.Error())
+		return nil, err
 	}
 
-	log.Infof("Connection established to service at [%v]", service.Target())
-	return service, err
+	log.Infof("Connection established to service at '%s'", service.Target())
+	return service, nil
 }
 
 // AsGrpcError returns a GRPC error, mapping internal errors and returning

@@ -147,7 +147,7 @@ func (amqpContext *AmqpContext) PublishMessage(queueName string, message interfa
 }
 
 func (amqpContext *AmqpContext) registerConsumer(queueName string) {
-	deliveryChan := amqpContext.deliveryChannels[queueName]
+	var deliveryChan <-chan amqp.Delivery
 	retries := 0
 	amqpContext.err = amqpContext.channel.Qos(
 		1,     // prefetch count
@@ -196,7 +196,6 @@ func (amqpContext *AmqpContext) registerConsumer(queueName string) {
 		}
 	}
 	amqpContext.deliveryChannels[queueName] = deliveryChan
-	return
 }
 
 // ReceiveMessage gets next message from queue with given queue name

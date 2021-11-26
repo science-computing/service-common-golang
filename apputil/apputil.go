@@ -44,10 +44,10 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 	viper.SetConfigType("yaml")
 	if explicitConfigFilename != "" {
 		f, err := os.Open(explicitConfigFilename)
-		defer f.Close()
 		if err != nil {
 			logger.Fatalf("Configfile %s could not be read: %v", explicitConfigFilename, err)
 		}
+		defer f.Close()
 		err = viper.ReadConfig(f)
 		if err != nil {
 			logger.Fatalf("Configfile %s could not be read: %v", explicitConfigFilename, err)
