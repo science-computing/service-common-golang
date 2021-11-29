@@ -54,12 +54,14 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 		}
 		logger.Infof("Successfully read configuration from [%v]", explicitConfigFilename)
 	} else {
-		configdir := os.Getenv(fmt.Sprintf("%s_CONFIGDIR", strings.ToUpper(projectName)))
-		if configdir == "" {
-			logger.Fatalf("No Configuration specified")
+		configDirName := fmt.Sprintf("%s_CONFIGDIR", strings.ToUpper(projectName))
+		configDir := os.Getenv(configDirName)
+		// if CAEF_CONFIGDIR is not specified, look for config in /etc
+		if configDir == "" {
+			configDir = "/etc"
+			logger.Errorf("%s not specified in env. Looking for /etc/%s", configDirName, strings.ToLower(serviceName)+".yaml")
 		}
-		viper.AddConfigPath(configdir)
-		// convenient for development to use workspace local config file
+		viper.AddConfigPath(configDir)
 		viper.SetConfigName(serviceName)
 		err := viper.ReadInConfig()
 		if err != nil {
