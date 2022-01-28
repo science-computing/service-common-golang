@@ -169,7 +169,7 @@ func GetServiceConnectionWithDialOptions(serviceAddress string, dialOptions ...g
 		return nil, err
 	}
 
-	log.Infof("Connection established to service at '%s'", service.Target())
+	log.Debugf("Connection established to service at '%s'", service.Target())
 	return service, nil
 }
 
