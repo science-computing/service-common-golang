@@ -64,9 +64,7 @@ var ErrNoMessage = errors.Errorf("No message found in queue")
 // or returns an already existing AmqpContext for the amqpConnectionURL
 // the consumerId identifies the consumer on the channel
 func (helper *AmqpConnectionHelper) GetAmqpContext(consumerId string) (amqpContext *AmqpContext) {
-
 	log.Debugf("Get AmqpContext for URL [%v] and id [%s]", helper.AmqpConnectionURL, consumerId)
-
 	amqpContext = &AmqpContext{}
 	amqpContext.amqpConnectionURL = helper.AmqpConnectionURL
 	amqpContext.consumerId = consumerId
@@ -90,7 +88,7 @@ func (amqpContext *AmqpContext) Channel() ChannelAccessor {
 // Reset resets the channel and queues - asumes that
 func (amqpContext *AmqpContext) Reset() error {
 	if amqpContext.connection.IsClosed() {
-		log.Infof("Reopening connection to %s: ", amqpContext.amqpConnectionURL)
+		log.Debugf("Reopening connection to %s: ", amqpContext.amqpConnectionURL)
 		if amqpContext.connection, amqpContext.err = amqp.Dial(amqpContext.amqpConnectionURL); amqpContext.err != nil {
 			log.Warnf("Cannot open AMPQ context, Reason: %s ", amqpContext.err.Error())
 			return amqpContext.err
