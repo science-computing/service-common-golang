@@ -71,7 +71,7 @@ func (helper *AmqpConnectionHelper) GetAmqpContext(consumerId string) (amqpConte
 	log.Debugf("Opening AMQP connection to [%v]", helper.AmqpConnectionURL)
 	// create connection
 	if amqpContext.connection, amqpContext.err = amqp.Dial(helper.AmqpConnectionURL); amqpContext.err != nil {
-		log.Warnf("Cannot open AMPQ context, Reason: %s ", amqpContext.err.Error())
+		log.Warnf("Cannot open AMPQ connection to '%s', Reason: %s ", helper.AmqpConnectionURL, amqpContext.err.Error())
 		return nil
 	}
 
