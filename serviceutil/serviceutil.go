@@ -31,6 +31,7 @@ var ErrInvalidArgument = errors.New("One ore more request arguments are invalid"
 type Service struct {
 	Name               string
 	GrpcPublishPort    string
+	GrpcOptions        []grpc.ServerOption
 	RestPort           string
 	MetricsPort        string
 	WaitGroup          sync.WaitGroup
@@ -143,7 +144,7 @@ func (service *Service) startGRPC() error {
 	}
 
 	// create new grpc server
-	server := grpc.NewServer()
+	server := grpc.NewServer(service.GrpcOptions...)
 
 	reflection.Register(server)
 	grpc.EnableTracing = true
