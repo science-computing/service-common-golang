@@ -109,12 +109,7 @@ func (amqpContext *AmqpContext) Reset() error {
 	return amqpContext.err
 }
 
-// PublishMessage sends given message as application/json to queue with given name.
-// If the queue does not exist, it is created.
-// Errors go to AmqpContext.Err
-func (amqpContext *AmqpContext) PublishMessage(queueName string, message interface{}) error {
-	log.Debugf("Publising message [%v] to queue [%v]", message, queueName)
-
+func (amqpContext *AmqpContext) EnsureQueueExists(queueName string) error {
 	// get queue from internal map or create new one
 	_, ok := amqpContext.queues[queueName]
 	if !ok {
@@ -126,6 +121,20 @@ func (amqpContext *AmqpContext) PublishMessage(queueName string, message interfa
 			amqpContext.err = errors.Wrapf(amqpContext.err, "Cannot declare AMQP queue [%v]", queueName)
 			return amqpContext.err
 		}
+	}
+	return nil
+}
+
+// PublishMessage sends given message as application/json to queue with given name.
+// If the queue does not exist, it is created.
+// Errors go to AmqpContext.Err
+func (amqpContext *AmqpContext) PublishMessage(queueName string, message interface{}) error {
+	log.Debugf("Publising message [%v] to queue [%v]", message, queueName)
+
+	// get queue from internal map or create new one
+	amqpContext.err = amqpContext.EnsureQueueExists(queueName)
+	if amqpContext.err != nil {
+		return amqpContext.err
 	}
 
 	body, err := json.Marshal(message)
