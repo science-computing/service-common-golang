@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"time"
 
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/science-computing/service-common-golang/apputil"
 
 	"github.com/pkg/errors"
@@ -251,6 +254,56 @@ func (amqpContext *AmqpContext) ReceiveMessage(queueName string, message interfa
 
 	// unmarshal delivery
 	amqpContext.err = json.Unmarshal(retDelivery.Body, message)
+
+	return &retDelivery, amqpContext.err
+}
+
+// ReceiveMessage gets next message from queue with given queue name
+func (amqpContext *AmqpContext) ReceiveProtoMessage(queueName string, message proto.Message) (delivery *amqp.Delivery, err error) {
+	log.Debugf("Receiving message from queue [%v] for consumerId [%v)", queueName, amqpContext.consumerId)
+
+	// get delivery from internal map or create new one
+	deliveryChan := amqpContext.deliveryChannels[queueName]
+	if deliveryChan == nil {
+		amqpContext.registerConsumer(queueName)
+		if amqpContext.err != nil {
+			log.Errorf("Unable to register consumer %v", amqpContext.err)
+			return nil, amqpContext.err
+		}
+		deliveryChan = amqpContext.deliveryChannels[queueName]
+	}
+
+	var retDelivery amqp.Delivery
+	var ok bool
+
+	// return false after timeout or non-ok channel read
+	select {
+	case <-time.After(10 * time.Second):
+		amqpContext.err = ErrNoMessage
+		log.Debugf("No message delivered for consumerId [%v].", amqpContext.consumerId)
+		// stop consuming
+		amqpContext.channel.Cancel(amqpContext.consumerId, false)
+		return nil, amqpContext.err
+	case retDelivery, ok = <-deliveryChan:
+		if ok && (retDelivery.Body == nil || len(retDelivery.Body) == 0) {
+			amqpContext.err = errors.New("Failed to get delivery from delivery chan. Body is empty. ConsumerId [" + amqpContext.consumerId + "]")
+			return nil, amqpContext.err
+		} else if !ok {
+			// chan is closed -> remove consumer
+			log.Debugf("Chan is closed for consumerId [%v]. ", amqpContext.consumerId)
+			amqpContext.channel.Cancel(amqpContext.consumerId, false)
+
+			/*err := amqpContext.registerConsumer(queueName)
+			if err != nil {
+				log.Errorf("Unable to register consumer %v", err)
+			}*/
+
+			return nil, amqpContext.err
+		}
+	}
+
+	// unmarshal delivery
+	amqpContext.err = protojson.Unmarshal(retDelivery.Body, message)
 
 	return &retDelivery, amqpContext.err
 }
