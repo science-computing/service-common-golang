@@ -20,6 +20,8 @@ const debugLogLevelConfigKey = "debug"
 var (
 	logger                 *log.Entry
 	explicitConfigFilename string
+	upperProjectName       string
+	upperServiceName       string
 )
 
 func init() {
@@ -35,11 +37,12 @@ func SetExplicitConfigFile(name string) {
 // requiredKeys are checked for presence to ensure default configuration values
 // if not found the service exits
 func InitConfig(projectName string, serviceName string, requiredKeys []string) {
+	upperProjectName = strings.ReplaceAll(strings.ToUpper(projectName), "-", "_")
+	upperServiceName = strings.ReplaceAll(strings.ToUpper(serviceName), "-", "_")
 	logger = InitLogging()
-
 	logger.Info("Init configuration")
 	if explicitConfigFilename == "" {
-		explicitConfigFilename = os.Getenv(fmt.Sprintf("%s_%s_CONFIG", strings.ToUpper(projectName), strings.ToUpper(serviceName)))
+		explicitConfigFilename = os.Getenv(fmt.Sprintf("%s_%s_CONFIG", upperProjectName, upperServiceName))
 	}
 	viper.SetConfigType("yaml")
 	if explicitConfigFilename != "" {
@@ -54,7 +57,7 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 		}
 		logger.Infof("Successfully read configuration from [%v]", explicitConfigFilename)
 	} else {
-		configDirName := fmt.Sprintf("%s_CONFIGDIR", strings.ToUpper(projectName))
+		configDirName := fmt.Sprintf("%s_CONFIGDIR", upperProjectName)
 		configDir := os.Getenv(configDirName)
 		// if CAEF_CONFIGDIR is not specified, look for config in /etc
 		if configDir == "" {
@@ -100,13 +103,28 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 //InitLogging inits apex/log as log
 func InitLoggingWithLevel(level log.Level) *log.Entry {
 	if logger == nil {
-		// init logging
-		log.SetHandler(verbosetextlog.New(os.Stdout))
 		logger = log.WithFields(log.Fields{})
-
-		// set default log level to INFO
-		log.SetLevel(level)
 	}
+	logfilename := ""
+	if upperProjectName != "" && upperServiceName != "" {
+		logfilename = os.Getenv(fmt.Sprintf("%s_%s_LOGFILE", upperProjectName, upperServiceName))
+	}
+	if logfilename == "" {
+		logfilename = "stdout"
+	}
+	var logfile *os.File
+	if logfilename == "stdout" {
+		logfile = os.Stdout
+	} else if logfilename == "stderr" {
+		logfile = os.Stderr
+	} else {
+		logfile, _ = os.OpenFile(logfilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
+	}
+	// init logging
+	log.SetHandler(verbosetextlog.New(logfile))
+
+	// set default log level to INFO
+	log.SetLevel(level)
 
 	return logger
 }
