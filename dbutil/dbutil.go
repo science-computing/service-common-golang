@@ -4,11 +4,10 @@ package dbutil
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
-
-	"github.com/science-computing/service-common-golang/apputil"
 
 	"github.com/apex/log"
 	"github.com/prometheus/client_golang/prometheus"
@@ -17,14 +16,9 @@ import (
 	// initializes postgres driver
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
-
-	//_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/pkg/errors"
 )
 
 type DatasetFlag uint64
-
-var SKIP_ERROR error = fmt.Errorf("Skipping due to previous error")
 
 const (
 	Committed DatasetFlag = 1 << iota
@@ -32,8 +26,8 @@ const (
 )
 
 var (
-	logger         = apputil.InitLogging()
-	activeContexts = promauto.NewGauge(prometheus.GaugeOpts{
+	ErrSkip        error = errors.New("skipping due to previous error")
+	activeContexts       = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "active_db_contexts",
 		Help: "The total number active db contexts",
 	})
@@ -157,7 +151,7 @@ func (dbContext *DbContext) handleError() {
 func (dbContext *DbContext) QueryRow(query string, args ...interface{}) (*sql.Row, error) {
 	if dbContext.err != nil {
 		log.Errorf("Skipping QueryRow due to previous error [%v]", dbContext.err)
-		return nil, SKIP_ERROR
+		return nil, ErrSkip
 	}
 
 	log.Debugf("Executing SQL [%v] with args %v", query, args)
@@ -174,7 +168,7 @@ func (dbContext *DbContext) QueryRow(query string, args ...interface{}) (*sql.Ro
 func (dbContext *DbContext) ScanQueryRow(supressErrNoRows bool, query Query, destination []interface{}) error {
 	if dbContext.err != nil {
 		log.Errorf("Skipping QueryRow [%v] due to previous error [%v]", query, dbContext.err)
-		return SKIP_ERROR
+		return ErrSkip
 	}
 
 	log.Debugf("Executing SQL [%v] with args %v", query, query.Args)
@@ -209,7 +203,7 @@ func (dbContext *DbContext) ScanQueryRow(supressErrNoRows bool, query Query, des
 func (dbContext *DbContext) Query(query string, args ...interface{}) (RowsAccessor, error) {
 	if dbContext.err != nil {
 		log.Errorf("Skipping Query [%v] due to previous error [%v]", query, dbContext.err)
-		return nil, SKIP_ERROR
+		return nil, ErrSkip
 	}
 
 	log.Debugf("Executing SQL [%v] with args %v", query, args)
@@ -225,7 +219,7 @@ func (dbContext *DbContext) Query(query string, args ...interface{}) (RowsAccess
 func (dbContext *DbContext) Execute(query string, args ...interface{}) error {
 	if dbContext.err != nil {
 		log.Errorf("Skipping Execute [%v] due to previous error [%v]", query, dbContext.err)
-		return SKIP_ERROR
+		return ErrSkip
 	}
 
 	log.Debugf("Executing SQL [%v] with args %v", query, args)
@@ -240,7 +234,7 @@ func (dbContext *DbContext) Execute(query string, args ...interface{}) error {
 			_, dbContext.err = dbContext.tx.Exec(query, args...)
 		}
 		if dbContext.err != nil {
-			dbContext.err = errors.Wrap(dbContext.err, "Insert failed. Transaction rolled back")
+			dbContext.err = fmt.Errorf("insert failed. Transaction rolled back: %w", dbContext.err)
 			dbContext.tx.Rollback()
 			dbContext.handleError()
 			return dbContext.err
@@ -254,7 +248,7 @@ func (dbContext *DbContext) Execute(query string, args ...interface{}) error {
 			_, dbContext.err = dbContext.db.Exec(query, args...)
 		}
 		if dbContext.err != nil {
-			dbContext.err = errors.Wrap(dbContext.err, "Insert failed")
+			dbContext.err = fmt.Errorf("insert failed: %w", dbContext.err)
 			dbContext.handleError()
 			return dbContext.err
 		}
@@ -331,11 +325,11 @@ func getDBConnection(dbConnectionURL string) (db *sql.DB, err error) {
 	db, err = sql.Open("pgx", dbConnectionURL)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to connect to DB [%v]", dbConnectionURL)
+		return nil, fmt.Errorf("failed to connect to DB [%v]: %w", dbConnectionURL, err)
 	}
 	err = db.Ping()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to ping DB [%v]", dbConnectionURL)
+		return nil, fmt.Errorf("failed to ping DB [%v]: %w", dbConnectionURL, err)
 	}
 	return db, nil
 }

@@ -4,28 +4,33 @@ package serviceutil
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"sync"
 
-	"github.com/apex/log"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/science-computing/service-common-golang/apputil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
 
-const metricsPublishPort string = "8080"
-const restPublishPort string = "8081"
-const grpcPublishPort string = "8090"
+const (
+	metricsPublishPort string = "8080"
+	restPublishPort    string = "8081"
+	grpcPublishPort    string = "8090"
+)
 
-// ErrInvalidArgument indicates, that one or more provided arguments are invalid, e.g. required data is missing
-var ErrInvalidArgument = errors.New("One ore more request arguments are invalid")
+var (
+	// ErrInvalidArgument indicates, that one or more provided arguments are invalid, e.g. required data is missing
+	ErrInvalidArgument = errors.New("one ore more request arguments are invalid")
+	log                = apputil.InitLogging()
+)
 
 // Service defines values to start a GRPC (and a REST) service
 type Service struct {

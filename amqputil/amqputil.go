@@ -3,15 +3,15 @@ package amqputil
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/science-computing/service-common-golang/apputil"
-
-	"github.com/pkg/errors"
-	"github.com/streadway/amqp"
 )
 
 var log = apputil.InitLogging()
@@ -61,7 +61,7 @@ type AmqpContext struct {
 }
 
 // ErrNoMessages indicates, that no message were found in a queue
-var ErrNoMessage = errors.Errorf("No message found in queue")
+var ErrNoMessage = errors.New("no message found in queue")
 
 // GetAmqpContext creates an AmqpContext for the given amqpConnectionURL
 // or returns an already existing AmqpContext for the amqpConnectionURL
@@ -121,7 +121,7 @@ func (amqpContext *AmqpContext) EnsureQueueExists(queueName string) error {
 		amqpContext.queues[queueName], amqpContext.err =
 			amqpContext.channel.QueueDeclare(queueName, false, false, false, false, args)
 		if amqpContext.err != nil {
-			amqpContext.err = errors.Wrapf(amqpContext.err, "Cannot declare AMQP queue [%v]", queueName)
+			amqpContext.err = fmt.Errorf("cannot declare AMQP queue [%v]: %w", queueName, amqpContext.err)
 			return amqpContext.err
 		}
 	}
@@ -142,7 +142,7 @@ func (amqpContext *AmqpContext) PublishMessage(queueName string, message interfa
 
 	body, err := json.Marshal(message)
 	if err != nil {
-		amqpContext.err = errors.Wrapf(err, "Failed to marshall AMQP message [%v]", message)
+		amqpContext.err = fmt.Errorf("failed to marshall AMQP message [%v]: %w", message, err)
 		return amqpContext.err
 	}
 
@@ -150,7 +150,7 @@ func (amqpContext *AmqpContext) PublishMessage(queueName string, message interfa
 	publishing := amqp.Publishing{ContentType: "application/json", Body: body}
 	// publish to default exchange ""
 	if err = amqpContext.channel.Publish("", queueName, false, false, publishing); err != nil {
-		amqpContext.err = errors.Wrapf(err, "Failed to publish AMQP message [%v]", message)
+		amqpContext.err = fmt.Errorf("failed to publish AMQP message [%v]: %w", message, err)
 		return amqpContext.err
 	}
 	return amqpContext.err
@@ -179,7 +179,7 @@ func (amqpContext *AmqpContext) registerConsumer(queueName string) {
 		)
 	}
 	if amqpContext.err != nil {
-		amqpContext.err = errors.Wrapf(amqpContext.err, "Failed to set Qos on queue [%v] for consumerId [%v]", queueName, amqpContext.consumerId)
+		amqpContext.err = fmt.Errorf("failed to set Qos on queue [%v] for consumerId [%v]: %w", queueName, amqpContext.consumerId, amqpContext.err)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (amqpContext *AmqpContext) registerConsumer(queueName string) {
 				time.Sleep(3 * time.Second)
 			} else {
 				// if there was another error
-				amqpContext.err = errors.Wrapf(amqpContext.err, "Cannot consume AMQP queue [%v] for consumerId [%v]", queueName, amqpContext.consumerId)
+				amqpContext.err = fmt.Errorf("cannot consume AMQP queue [%v] for consumerId [%v]: %w", queueName, amqpContext.consumerId, amqpContext.err)
 				return
 			}
 		} else {
