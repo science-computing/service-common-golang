@@ -8,10 +8,10 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/science-computing/service-common-golang/apputil"
 
 	"github.com/pkg/errors"
-	"github.com/streadway/amqp"
 )
 
 var log = apputil.InitLogging()
