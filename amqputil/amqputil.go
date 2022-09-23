@@ -29,7 +29,7 @@ type AmqpAccessor interface {
 
 // ChannelAccessor is an interface for the necessary methods to access the Channel struct of the AMQP library.
 // the library does not define an interface, so we do it here (it helps for mocking)
-// this interface only defines those methods that we know we need. See https://godoc.org/github.com/streadway/amqp
+// this interface only defines those methods that we know we need. See https://pkg.go.dev/github.com/rabbitmq/amqp091-go
 // for all possible methods.
 type ChannelAccessor interface {
 	Qos(prefetchCount, prefetchSize int, global bool) error
