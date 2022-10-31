@@ -8,7 +8,7 @@ go 1.19
 require (
 	github.com/golang/protobuf v1.5.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3
-	github.com/science-computing/service-common-golang v0.1.2
+	github.com/science-computing/service-common-golang v0.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.13.0
 	google.golang.org/genproto v0.0.0-20220921223823-23cae91e6737

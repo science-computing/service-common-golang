@@ -97,6 +97,9 @@ func (amqpContext *AmqpContext) Reset() error {
 			return amqpContext.err
 		}
 	}
+	if amqpContext.channel != nil {
+		amqpContext.channel.Close()
+	}
 	// create channel
 	if amqpContext.channel, amqpContext.err = amqpContext.connection.Channel(); amqpContext.err != nil {
 		log.Warnf("Cannot open AMPQ channel, Reason: %s ", amqpContext.err.Error())
