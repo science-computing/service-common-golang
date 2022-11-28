@@ -39,7 +39,9 @@ func SetExplicitConfigFile(name string) {
 func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 	upperProjectName = strings.ReplaceAll(strings.ToUpper(projectName), "-", "_")
 	upperServiceName = strings.ReplaceAll(strings.ToUpper(serviceName), "-", "_")
-	logger = InitLogging()
+	if logger == nil {
+		logger = InitLogging()
+	}
 	logger.Info("Init configuration")
 	if explicitConfigFilename == "" {
 		explicitConfigFilename = os.Getenv(fmt.Sprintf("%s_%s_CONFIG", upperProjectName, upperServiceName))
@@ -100,7 +102,7 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 	}
 }
 
-//InitLogging inits apex/log as log
+// InitLogging inits apex/log as log
 func InitLoggingWithLevel(level log.Level) *log.Entry {
 	if logger == nil {
 		logger = log.WithFields(log.Fields{})
@@ -129,7 +131,7 @@ func InitLoggingWithLevel(level log.Level) *log.Entry {
 	return logger
 }
 
-//InitLogging inits apex/log as log handler and set default level to INFO
+// InitLogging inits apex/log as log handler and set default level to INFO
 func InitLogging() *log.Entry {
 	return InitLoggingWithLevel(log.InfoLevel)
 }
