@@ -90,7 +90,7 @@ func (amqpContext *AmqpContext) Channel() ChannelAccessor {
 
 // Reset resets the channel and queues - asumes that
 func (amqpContext *AmqpContext) Reset() error {
-	if amqpContext.connection.IsClosed() {
+	if amqpContext.connection == nil || amqpContext.connection.IsClosed() {
 		log.Debugf("Reopening connection to %s: ", amqpContext.amqpConnectionURL)
 		if amqpContext.connection, amqpContext.err = amqp.Dial(amqpContext.amqpConnectionURL); amqpContext.err != nil {
 			log.Warnf("Cannot open AMPQ context, Reason: %s ", amqpContext.err.Error())
