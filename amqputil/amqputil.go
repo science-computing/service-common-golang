@@ -317,8 +317,13 @@ func (amqpContext *AmqpContext) Close() error {
 	if amqpContext.channel != nil {
 		amqpContext.channel.Close()
 	}
-	amqpContext.err = amqpContext.connection.Close()
-	return amqpContext.err
+	if amqpContext.connection != nil {
+		amqpContext.err = amqpContext.connection.Close()
+		return amqpContext.err
+	} else {
+		log.Warnf("Connection not available")
+		return nil
+	}
 }
 
 func (amqpContext *AmqpContext) LastError() error {
