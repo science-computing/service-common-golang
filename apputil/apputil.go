@@ -42,7 +42,7 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 	if logger == nil {
 		logger = InitLogging()
 	}
-	logger.Info("Init configuration")
+	logger.Debug("Init configuration")
 	if explicitConfigFilename == "" {
 		explicitConfigFilename = os.Getenv(fmt.Sprintf("%s_%s_CONFIG", upperProjectName, upperServiceName))
 	}
@@ -64,7 +64,7 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 		// if CAEF_CONFIGDIR is not specified, look for config in /etc
 		if configDir == "" {
 			configDir = "/etc"
-			logger.Errorf("%s not specified in env. Looking for /etc/%s", configDirName, strings.ToLower(serviceName)+".yaml")
+			logger.Debugf("%s not specified in env. Looking for /etc/%s", configDirName, strings.ToLower(serviceName)+".yaml")
 		}
 		viper.AddConfigPath(configDir)
 		viper.SetConfigName(serviceName)
