@@ -53,7 +53,7 @@ func (h *Handler) HandleLog(e *apexlog.Entry) error {
 		file = filepath.Base(file)
 	}
 
-	fmt.Fprintf(h.Writer, "\033[%dm%6s\033[0m[%s] %-25s -- %s:%d", color, level, ts.Format("2006-02-01 15:04:05"), e.Message, file, line)
+	fmt.Fprintf(h.Writer, "\033[%dm%6s\033[0m[%s] %-25s -- %s:%d", color, level, ts.Format("2006-01-02 15:04:05"), e.Message, file, line)
 
 	for _, name := range names {
 		fmt.Fprintf(h.Writer, " \033[%dm%s\033[0m=%v", color, name, e.Fields.Get(name))
