@@ -133,7 +133,7 @@ func (service *Service) startREST() error {
 	mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui", fs))
 
 	log.Infof("HTTP server start listening on port %v", service.RestPort)
-	return http.ListenAndServe("localhost:"+service.RestPort, mux)
+	return http.ListenAndServe("0.0.0.0:"+service.RestPort, mux)
 }
 
 func (service *Service) startGRPC() error {
