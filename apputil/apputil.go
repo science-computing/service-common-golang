@@ -72,7 +72,7 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 		if err != nil {
 			logger.Fatalf("Configuration could not be read: %s", err)
 		}
-		logger.Infof("Successfully read configuration from [%v]", viper.GetViper().ConfigFileUsed())
+		logger.Debugf("Successfully read configuration from [%v]", viper.GetViper().ConfigFileUsed())
 	}
 
 	// overwrite config file config values with ENV values if present
