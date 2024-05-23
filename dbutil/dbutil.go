@@ -15,8 +15,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	// initializes postgres driver
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/stdlib"
 
 	//_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
@@ -62,8 +60,6 @@ type DbAccessor interface {
 	Commit(restartTx bool) error
 	Rollback(restartTx bool) error
 	Close() error
-	GetPGXConn() (*pgx.Conn, error)
-	CheckPGXBatchErr(br pgx.BatchResults) error
 	LastError() error
 	SetLastError(err error)
 	ResetError()
@@ -78,7 +74,6 @@ type DbContext struct {
 	db           *sql.DB
 	ctx          *context.Context
 	tx           *sql.Tx
-	pgxconn      *pgx.Conn
 	errorHandler func(error)
 }
 
@@ -308,11 +303,6 @@ func (dbContext *DbContext) Close() error {
 		dbContext.Rollback(false)
 	}
 
-	if dbContext.pgxconn != nil {
-		stdlib.ReleaseConn(dbContext.db, dbContext.pgxconn)
-		dbContext.pgxconn = nil
-	}
-
 	dbContext.err = nil
 
 	// FIXME: do we need to clean up tx?
@@ -338,34 +328,6 @@ func getDBConnection(dbConnectionURL string) (db *sql.DB, err error) {
 		return nil, errors.Wrapf(err, "Failed to ping DB [%v]", dbConnectionURL)
 	}
 	return db, nil
-}
-
-func (dbContext *DbContext) GetPGXConn() (*pgx.Conn, error) {
-	var err error
-	if dbContext.pgxconn == nil {
-		dbContext.pgxconn, err = stdlib.AcquireConn(dbContext.db)
-	}
-	return dbContext.pgxconn, err
-}
-
-// CheckPGXErr applies the first error of a PGX batch to dbContext.Err, and logs all of them
-func (dbContext *DbContext) CheckPGXBatchErr(br pgx.BatchResults) error {
-	for {
-		commandTag, err := br.Exec()
-		if err != nil && err.Error() == "no result" {
-			break
-		}
-		if err != nil {
-			log.Errorf("Error when executing batch: %s", err.Error())
-			if dbContext.err == nil {
-				dbContext.err = err
-			}
-		}
-		if commandTag == nil {
-			break
-		}
-	}
-	return dbContext.err
 }
 
 func (dbContext *DbContext) LastError() error {
