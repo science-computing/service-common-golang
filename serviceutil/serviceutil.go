@@ -16,6 +16,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
@@ -99,9 +100,10 @@ func (service *Service) startREST() error {
 	defer cancel()
 
 	// connect to GRPC server
-	conn, err := grpc.Dial("localhost:"+service.GrpcPublishPort, grpc.WithInsecure())
+	address := "localhost:" + service.GrpcPublishPort
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return fmt.Errorf("failed to dial GRPC service [%w]", err)
+		return fmt.Errorf("failed to dial grpc service at %q: %v", address, err)
 	}
 	defer conn.Close()
 
@@ -159,18 +161,19 @@ func (service *Service) startGRPC() error {
 // GetServiceConnection establishes connection to GRPC service at given URL.
 // We are not waiting, til the service is up (no grpc.WithBlock())
 func GetServiceConnection(serviceAddress string) (service *grpc.ClientConn, err error) {
-	return GetServiceConnectionWithDialOptions(serviceAddress, grpc.WithInsecure())
+	return GetServiceConnectionWithDialOptions(serviceAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 }
 
 // GetServiceConnectionWithDialOptions establishes connection to GRPC service at given URL with given dial options.
 func GetServiceConnectionWithDialOptions(serviceAddress string, dialOptions ...grpc.DialOption) (service *grpc.ClientConn, err error) {
-	service, err = grpc.Dial(serviceAddress, dialOptions...)
+	service, err = grpc.NewClient(serviceAddress, dialOptions...)
+
 	if err != nil {
-		log.Errorf("Failed to connect to '%s'. %s", serviceAddress, err.Error())
+		log.Errorf("failed to connect to %q: %v", serviceAddress, err)
 		return nil, err
 	}
 
-	log.Debugf("Connection established to service at '%s'", service.Target())
+	log.Debugf("Connection established to service at %q", service.Target())
 	return service, nil
 }
 
@@ -190,14 +193,14 @@ func AsGrpcError(err error, message string, messageArgs ...interface{}) error {
 	var grpcErr error
 	switch {
 	case err == sql.ErrNoRows:
-		grpcErr = status.Errorf(codes.NotFound, "Instance not found")
+		grpcErr = status.Errorf(codes.NotFound, "instance not found")
 	case err == ErrInvalidArgument:
 		grpcErr = status.Errorf(codes.InvalidArgument, message)
 	default:
-		grpcErr = status.Errorf(codes.Internal, "An internal error occurred")
+		grpcErr = status.Errorf(codes.Internal, "an internal error occurred")
 	}
 
-	log.Errorf("MESSAGE: [%v] PUBLIC ERROR: [%v] INTERNAL ERROR: [%v]", message, grpcErr.Error(), err)
+	log.Errorf("an error occurred: %s\npublic error: %v\ninternal error: %v", message, grpcErr, err)
 	return grpcErr
 }
 
