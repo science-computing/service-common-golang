@@ -95,11 +95,6 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 		jww.SetStdoutThreshold(jww.LevelTrace)
 		log.SetLevel(log.DebugLevel)
 	}
-
-	// print config
-	for key, value := range viper.AllSettings() {
-		logger.Debugf("Configuration setting [%s=%v]", key, value)
-	}
 }
 
 // InitLogging inits apex/log as log
