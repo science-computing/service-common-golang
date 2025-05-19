@@ -15,4 +15,4 @@ go build ./...
 LICENSE
 =======
 
-The code is licensed under the MIT license, for details see LICENSE.txt
+The code is licensed under the MIT license, for details see LICENSE
