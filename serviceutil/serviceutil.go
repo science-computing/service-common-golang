@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/apex/log"
+	"github.com/science-computing/service-common-golang/apputil"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -24,6 +24,8 @@ import (
 const metricsPublishPort string = "8080"
 const restPublishPort string = "8081"
 const grpcPublishPort string = "8090"
+
+var log = apputil.InitLogging()
 
 // ErrInvalidArgument indicates, that one or more provided arguments are invalid, e.g. required data is missing
 var ErrInvalidArgument = errors.New("One ore more request arguments are invalid")

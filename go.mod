@@ -3,7 +3,6 @@ module github.com/science-computing/service-common-golang
 go 1.25.3
 
 require (
-	github.com/apex/log v1.9.0
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3
 	github.com/pkg/errors v0.9.1

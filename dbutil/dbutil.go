@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/science-computing/service-common-golang/apputil"
-
-	"github.com/apex/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
@@ -94,7 +92,7 @@ func (helper *DbConnectionHelper) GetDbContext(ctx *context.Context, useTransact
 
 		dbConnectionURL := helper.DbConnectionURL
 
-		log.Debugf("Get DbContext for URL [%v]", dbConnectionURL)
+		logger.Debugf("Get DbContext for URL [%v]", dbConnectionURL)
 
 		dbContext.db = helper.dbConnection
 		if dbContext.db == nil {
@@ -151,11 +149,11 @@ func (dbContext *DbContext) handleError() {
 // The operation becomes a no-op if there is a previous error in DbContext.err.
 func (dbContext *DbContext) QueryRow(query string, args ...interface{}) (*sql.Row, error) {
 	if dbContext.err != nil {
-		log.Errorf("Skipping QueryRow due to previous error [%v]", dbContext.err)
+		logger.Errorf("Skipping QueryRow due to previous error [%v]", dbContext.err)
 		return nil, SKIP_ERROR
 	}
 
-	log.Debugf("Executing SQL [%v] with args %v", query, args)
+	logger.Debugf("Executing SQL [%v] with args %v", query, args)
 	row := dbContext.db.QueryRow(query, args...)
 
 	dbContext.handleError()
@@ -168,11 +166,11 @@ func (dbContext *DbContext) QueryRow(query string, args ...interface{}) (*sql.Ro
 // If supressErrNoRows and error occurrs, destination value are reset to ""
 func (dbContext *DbContext) ScanQueryRow(supressErrNoRows bool, query Query, destination []interface{}) error {
 	if dbContext.err != nil {
-		log.Errorf("Skipping QueryRow [%v] due to previous error [%v]", query, dbContext.err)
+		logger.Errorf("Skipping QueryRow [%v] due to previous error [%v]", query, dbContext.err)
 		return SKIP_ERROR
 	}
 
-	log.Debugf("Executing SQL [%v] with args %v", query, query.Args)
+	logger.Debugf("Executing SQL [%v] with args %v", query, query.Args)
 	var row *sql.Row
 	if query.Args != nil {
 		row = dbContext.db.QueryRow(query.Query, query.Args...)
@@ -203,11 +201,11 @@ func (dbContext *DbContext) ScanQueryRow(supressErrNoRows bool, query Query, des
 // The operation becomes a no-op if there is a previous error in DbContext.err.
 func (dbContext *DbContext) Query(query string, args ...interface{}) (RowsAccessor, error) {
 	if dbContext.err != nil {
-		log.Errorf("Skipping Query [%v] due to previous error [%v]", query, dbContext.err)
+		logger.Errorf("Skipping Query [%v] due to previous error [%v]", query, dbContext.err)
 		return nil, SKIP_ERROR
 	}
 
-	log.Debugf("Executing SQL [%v] with args %v", query, args)
+	logger.Debugf("Executing SQL [%v] with args %v", query, args)
 
 	dbContext.handleError()
 	var rows *sql.Rows
@@ -219,11 +217,11 @@ func (dbContext *DbContext) Query(query string, args ...interface{}) (RowsAccess
 // The operation becomes a no-op if there is a previous error in DbContext.err
 func (dbContext *DbContext) Execute(query string, args ...interface{}) error {
 	if dbContext.err != nil {
-		log.Errorf("Skipping Execute [%v] due to previous error [%v]", query, dbContext.err)
+		logger.Errorf("Skipping Execute [%v] due to previous error [%v]", query, dbContext.err)
 		return SKIP_ERROR
 	}
 
-	log.Debugf("Executing SQL [%v] with args %v", query, args)
+	logger.Debugf("Executing SQL [%v] with args %v", query, args)
 
 	// execute in transaction if present
 	if dbContext.tx != nil {
@@ -296,10 +294,10 @@ func (dbContext *DbContext) Rollback(restartTx bool) error {
 func (dbContext *DbContext) Close() error {
 	// commit in case of no error
 	if dbContext.err == nil {
-		log.Debug("Committing transaction")
+		logger.Debug("Committing transaction")
 		dbContext.Commit(false)
 	} else {
-		log.Debugf("Rolling back transaction due to error: %v", dbContext.err)
+		logger.Debugf("Rolling back transaction due to error: %v", dbContext.err)
 		dbContext.Rollback(false)
 	}
 
@@ -317,7 +315,7 @@ func (dbContext *DbContext) Close() error {
 
 // getDBConnection opens a connection to given dbConnectionUrl
 func getDBConnection(dbConnectionURL string) (db *sql.DB, err error) {
-	log.Debugf("Opening DB connection to [%v]", dbConnectionURL)
+	logger.Debugf("Opening DB connection to [%v]", dbConnectionURL)
 	db, err = sql.Open("pgx", dbConnectionURL)
 
 	if err != nil {
