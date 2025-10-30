@@ -2,10 +2,13 @@
 package apputil
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/science-computing/service-common-golang/apputil/slogverbosetext"
@@ -23,54 +26,87 @@ type LoggerWrapper struct {
 
 // Debug provides apex/log compatible debug logging (without format)
 func (l *LoggerWrapper) Debug(message string) {
-	l.Logger.Debug(message)
+	l.log(slog.LevelDebug, message)
 }
 
 // Debugf provides apex/log compatible debug logging
 func (l *LoggerWrapper) Debugf(format string, args ...interface{}) {
-	l.Logger.Debug(fmt.Sprintf(format, args...))
+	l.log(slog.LevelDebug, fmt.Sprintf(format, args...))
 }
 
 // Info provides apex/log compatible info logging (without format)
 func (l *LoggerWrapper) Info(message string) {
-	l.Logger.Info(message)
+	l.log(slog.LevelInfo, message)
 }
 
 // Infof provides apex/log compatible info logging
 func (l *LoggerWrapper) Infof(format string, args ...interface{}) {
-	l.Logger.Info(fmt.Sprintf(format, args...))
+	l.log(slog.LevelInfo, fmt.Sprintf(format, args...))
 }
 
 // Warn provides apex/log compatible warn logging (without format)
 func (l *LoggerWrapper) Warn(message string) {
-	l.Logger.Warn(message)
+	l.log(slog.LevelWarn, message)
 }
 
 // Warnf provides apex/log compatible warn logging
 func (l *LoggerWrapper) Warnf(format string, args ...interface{}) {
-	l.Logger.Warn(fmt.Sprintf(format, args...))
+	l.log(slog.LevelWarn, fmt.Sprintf(format, args...))
 }
 
 // Error provides apex/log compatible error logging (without format)
 func (l *LoggerWrapper) Error(message string) {
-	l.Logger.Error(message)
+	l.log(slog.LevelError, message)
 }
 
 // Errorf provides apex/log compatible error logging
 func (l *LoggerWrapper) Errorf(format string, args ...interface{}) {
-	l.Logger.Error(fmt.Sprintf(format, args...))
+	l.log(slog.LevelError, fmt.Sprintf(format, args...))
 }
 
 // Fatal provides apex/log compatible fatal logging (without format)
 func (l *LoggerWrapper) Fatal(message string) {
-	l.Logger.Error(message)
+	l.log(slog.LevelError, message)
 	os.Exit(1)
 }
 
 // Fatalf provides apex/log compatible fatal logging
 func (l *LoggerWrapper) Fatalf(format string, args ...interface{}) {
-	l.Logger.Error(fmt.Sprintf(format, args...))
+	l.log(slog.LevelError, fmt.Sprintf(format, args...))
 	os.Exit(1)
+}
+
+// log is a helper that logs with the correct source location
+// It dynamically finds the first caller outside of apputil.go
+func (l *LoggerWrapper) log(level slog.Level, message string) {
+	ctx := context.Background()
+	if !l.Logger.Enabled(ctx, level) {
+		return
+	}
+
+	// Get multiple program counters to find the first one outside apputil.go
+	var pcs [10]uintptr
+	n := runtime.Callers(2, pcs[:]) // Start from 2 to skip runtime.Callers and this function
+
+	// Find the first PC that's not in apputil.go by checking each frame
+	var pc uintptr
+	for i := range n {
+		frames := runtime.CallersFrames(pcs[i : i+1])
+		frame, _ := frames.Next()
+		// Skip frames from apputil.go (our wrapper methods)
+		if !strings.Contains(frame.File, "apputil.go") {
+			pc = pcs[i]
+			break
+		}
+	}
+
+	// Fallback: use the first frame if we couldn't find one outside apputil.go
+	if pc == 0 {
+		pc = pcs[0]
+	}
+
+	r := slog.NewRecord(time.Now(), level, message, pc)
+	_ = l.Logger.Handler().Handle(ctx, r)
 }
 
 var (
