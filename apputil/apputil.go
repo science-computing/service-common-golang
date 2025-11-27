@@ -186,44 +186,58 @@ func InitConfig(projectName string, serviceName string, requiredKeys []string) {
 		jww.SetLogThreshold(jww.LevelTrace)
 		jww.SetStdoutThreshold(jww.LevelTrace)
 		// Reinitialize logger with debug level
-		logger = InitLoggingWithLevel(slog.LevelDebug)
+		logger.Logger = createSLogger(slog.LevelDebug)
 	}
 }
 
-// InitLoggingWithLevel inits slog with specified level and returns a LoggerWrapper
-func InitLoggingWithLevel(level slog.Level) *LoggerWrapper {
-	if logger == nil {
-		logfilename := ""
-		if upperProjectName != "" && upperServiceName != "" {
-			logfilename = os.Getenv(fmt.Sprintf("%s_%s_LOGFILE", upperProjectName, upperServiceName))
-		}
-		if logfilename == "" {
-			logfilename = "stdout"
-		}
-		var logfile *os.File
-		if logfilename == "stdout" {
-			logfile = os.Stdout
-		} else if logfilename == "stderr" {
-			logfile = os.Stderr
-		} else {
-			logfile, _ = os.OpenFile(logfilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
-		}
+// createSLogger creates a new logger with the specified level
+// This is an internal function used to recreate the logger when the level needs to change
+func createSLogger(level slog.Level) *slog.Logger {
+	logfilename := ""
+	if upperProjectName != "" && upperServiceName != "" {
+		logfilename = os.Getenv(fmt.Sprintf("%s_%s_LOGFILE", upperProjectName, upperServiceName))
+	}
+	if logfilename == "" {
+		logfilename = "stdout"
+	}
+	var logfile *os.File
+	if logfilename == "stdout" {
+		logfile = os.Stdout
+	} else if logfilename == "stderr" {
+		logfile = os.Stderr
+	} else {
+		logfile, _ = os.OpenFile(logfilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
+	}
 
-		// Create our custom verbose text handler that matches the original format
-		opts := &slog.HandlerOptions{
-			Level:     level,
-			AddSource: true,
-		}
-		handler := slogverbosetext.New(logfile, opts)
-		slogger := slog.New(handler)
+	// Create our custom verbose text handler that matches the original format
+	opts := &slog.HandlerOptions{
+		Level:     level,
+		AddSource: true,
+	}
+	handler := slogverbosetext.New(logfile, opts)
+	slogger := slog.New(handler)
+	return slogger
+}
+
+// InitLoggingWithLevel inits slog with specified level and returns a LoggerWrapper
+// Uses singleton pattern - only creates logger once
+func InitLoggingWithLevel(level slog.Level) *LoggerWrapper {
+	slogger := createSLogger(level)
+	if logger == nil {
 		logger = &LoggerWrapper{Logger: slogger}
+	} else {
+		logger.Logger = slogger
 	}
 	return logger
 }
 
 // InitLogging inits slog as log handler and set default level to INFO
+// Uses singleton pattern - only creates logger once
 func InitLogging() *LoggerWrapper {
-	return InitLoggingWithLevel(slog.LevelInfo)
+	if logger == nil {
+		logger = &LoggerWrapper{Logger: createSLogger(slog.LevelInfo)}
+	}
+	return logger
 }
 
 // GenerateGUID generates a globally unique identifier

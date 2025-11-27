@@ -188,3 +188,67 @@ func TestVerboseLoggingFormat(t *testing.T) {
 		t.Errorf("Expected 'apputil_test.go:LINE' in output: %s", output)
 	}
 }
+
+func TestLogLevelChange(t *testing.T) {
+	// Save original state
+	originalLogger := logger
+	defer func() {
+		logger = originalLogger
+		explicitConfigFilename = ""
+	}()
+
+	// Reset logger for testing
+	logger = nil
+
+	// Set up environment for testing
+	upperProjectName = "SCGL"
+	upperServiceName = "TEST"
+
+	// Create a buffer to capture log output
+	tmpDir := t.TempDir()
+	logFile := tmpDir + "/test.log"
+	os.Setenv("SCGL_TEST_LOGFILE", logFile)
+	defer os.Unsetenv("SCGL_TEST_LOGFILE")
+
+	log := InitLogging()
+
+	// Try to log a debug message - should NOT be logged at INFO level
+	log.Debug("This debug message should not appear")
+
+	// Read log file - should be empty or not contain debug message
+	logContent, _ := os.ReadFile(logFile)
+	if strings.Contains(string(logContent), "This debug message should not appear") {
+		t.Errorf("Debug message should not be logged at INFO level, but found: %s", logContent)
+	}
+
+	// Create a minimal config file
+	configFile := tmpDir + "/test.yaml"
+	err := os.WriteFile(configFile, []byte("# minimal config\ndebug: true\n"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test config: %v", err)
+	}
+
+	// Set explicit config file
+	SetExplicitConfigFile(configFile)
+
+	// Re-initialize config
+	InitConfig("scgl", "test", []string{})
+
+	// Now log a debug message - should be logged
+	log.Debug("This debug message should appear")
+
+	// Read log file - should contain the debug message
+	logContent, err = os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+
+	if !strings.Contains(string(logContent), "This debug message should appear") {
+		t.Errorf("Expected debug message to be logged after changing level to DEBUG, got: %s", logContent)
+	}
+
+	// Verify DEBUG level is shown in output
+	if !strings.Contains(string(logContent), "DEBUG") {
+		t.Errorf("Expected 'DEBUG' level in output, got: %s", logContent)
+	}
+}
