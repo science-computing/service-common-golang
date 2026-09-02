@@ -10,7 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
+	"uuid"
+
 	"github.com/science-computing/service-common-golang/apputil/slogverbosetext"
 	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/pflag"
